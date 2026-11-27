@@ -1,0 +1,137 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package "modelo" {
+    class Sucursal {
+        - codigo: String
+        - nombre: String
+        - asociados: List<Asociado>
+        + Sucursal(codigo: String, nombre: String)
+        + agregarAsociado(a: Asociado): void
+        + getCodigo(): String
+        + getNombre(): String
+        + toString(): String
+    }
+
+    class Asociado {
+        - cedula: String
+        - numeroAsociado: String
+        - nombre: String
+        - sucursal: Sucursal
+        - saldoAportes: double
+        - cuentas: List<Cuenta>
+        - prestamoActivo: Prestamo
+        + Asociado(cedula: String, numeroAsociado: String, nombre: String, sucursal: Sucursal)
+        + getCedula(): String
+        + getNumeroAsociado(): String
+        + getNombre(): String
+        + getSucursal(): Sucursal
+        + agregarCuenta(c: Cuenta): void
+        + getPrestamoActivo(): Prestamo
+        + setPrestamoActivo(p: Prestamo): void
+        + equals(o: Object): boolean
+        + toString(): String
+    }
+
+    abstract class Cuenta {
+        - numeroCuenta: String
+        - saldo: double
+        - cedulaAsociado: String
+        + Cuenta(numeroCuenta: String, saldoInicial: double, cedulaAsociado: String)
+        + depositar(monto: double): void
+        + {abstract} retirar(monto: double): void
+        + getNumeroCuenta(): String
+        + getSaldo(): double
+        + getCedulaAsociado(): String
+        + {abstract} getTipoCuenta(): String
+        + toString(): String
+    }
+
+    class CuentaAhorro {
+        - tasaInteresAnual: double
+        + CuentaAhorro(numeroCuenta: String, saldoInicial: double, cedulaAsociado: String, tasaInteresAnual: double)
+        + retirar(monto: double): void
+        + getTipoCuenta(): String
+        + toString(): String
+    }
+
+    class CuentaCorriente {
+        - comisionRetiro: double
+        + CuentaCorriente(numeroCuenta: String, saldoInicial: double, cedulaAsociado: String, comisionRetiro: double)
+        + retirar(monto: double): void
+        + getTipoCuenta(): String
+        + toString(): String
+    }
+
+    class Prestamo {
+        - idPrestamo: String
+        - cedulaAsociado: String
+        - montoPrincipal: double
+        - plazoMeses: int
+        - activo: boolean
+        - cuotas: List<Cuota>
+        + Prestamo(idPrestamo: String, cedulaAsociado: String, montoPrincipal: double, plazoMeses: int, politica: PoliticaInteres)
+        + anular(): void
+        + pagarCuota(numeroCuota: int): void
+        + getIdPrestamo(): String
+        + getCedulaAsociado(): String
+        + isActivo(): boolean
+        + getCuotas(): List<Cuota>
+        + toString(): String
+    }
+
+    class Cuota {
+        - numero: int
+        - monto: double
+        - fechaVencimiento: LocalDate
+        - estado: String
+        + Cuota(numero: int, monto: double, fechaVencimiento: LocalDate)
+        + marcarPagada(): void
+        + anular(): void
+        + getNumero(): int
+        + getMonto(): double
+        + getFechaVencimiento(): LocalDate
+        + getEstado(): String
+        + toString(): String
+    }
+}
+
+package "estrategia" {
+    interface PoliticaInteres {
+        + calcularMontoTotal(montoPrincipal: double, plazoMeses: int): double
+        + getNombrePolitica(): String
+    }
+
+    class InteresEstandar {
+        - TASA_MENSUAL: double = 0.015
+        + calcularMontoTotal(montoPrincipal: double, plazoMeses: int): double
+        + getNombrePolitica(): String
+    }
+
+    class InteresPreferencial {
+        - TASA_MENSUAL: double = 0.008
+        + calcularMontoTotal(montoPrincipal: double, plazoMeses: int): double
+        + getNombrePolitica(): String
+    }
+}
+
+' 1. Agregación: Sucursal tiene Asociados (existen independientemente)
+Sucursal "1" o-- "0..*" Asociado
+
+' 2. Asociación: Asociado tiene Cuentas y máximo 1 Préstamo activo
+Asociado "1" --> "0..*" Cuenta
+Asociado "1" --> "0..1" Prestamo : prestamoActivo
+
+' 3. Generalización (Herencia): CuentaAhorro y CuentaCorriente heredan de Cuenta
+Cuenta <|-- CuentaAhorro
+Cuenta <|-- CuentaCorriente
+
+' 4. Composición: Prestamo contiene Cuotas (las cuotas no existen sin el préstamo)
+Prestamo "1" *-- "1..*" Cuota
+
+' 5. Dependencia y Realización: Prestamo usa PoliticaInteres
+PoliticaInteres <|.. InteresEstandar
+PoliticaInteres <|.. InteresPreferencial
+Prestamo ..> PoliticaInteres : usa
+
+@enduml
